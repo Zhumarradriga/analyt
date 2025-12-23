@@ -1,0 +1,62 @@
+# .github/workflows/analytic-service.yaml
+name: Build and Deploy analytic-service
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'services/analytic/**'
+
+env:
+  HARBOR_REGISTRY: ${{ secrets.HARBOR_REGISTRY }}
+  HARBOR_PROJECT: game-services
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+
+      - name: Test
+        run: go test -v ./...
+        working-directory: services/analytic
+
+      - name: Log in to Harbor
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.HARBOR_REGISTRY }}
+          username: ${{ secrets.HARBOR_USERNAME }}
+          password: ${{ secrets.HARBOR_PASSWORD }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: services/analytic
+          push: true
+          tags: |
+            ${{ secrets.HARBOR_REGISTRY }}/${{ secrets.HARBOR_PROJECT }}/analytic:${{ github.sha }}
+            ${{ secrets.HARBOR_REGISTRY }}/${{ secrets.HARBOR_PROJECT }}/analytic:latest
+
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Configure kubectl
+        run: |
+          mkdir -p ~/.kube
+          echo '${{ secrets.KUBECONFIG_BASE64 }}' | base64 --decode > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Update Deployment image
+        run: |
+          kubectl set image deployment/analytic-service \
+            app=${{ secrets.HARBOR_REGISTRY }}/${{ secrets.HARBOR_PROJECT }}/analytic:${{ github.sha }} \
+            -n default
+
+      - name: Wait for rollout
+        run: kubectl rollout status deployment/analytic-service -n default --timeout=300s
