@@ -26,7 +26,7 @@ jobs:
 
       # - name: Test
       #   run: go test -v ./...
-      #   working-directory: services/analytic
+      #   working-directory: .
 
       - name: Install Harbor CA certificate
         run: |
@@ -44,7 +44,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          context: services/analytic
+          context: .
           push: true
           tags: |
             ${{ secrets.HARBOR_REGISTRY }}/${{ secrets.HARBOR_PROJECT }}/analytic:${{ github.sha }}
