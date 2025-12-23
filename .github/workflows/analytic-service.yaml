@@ -28,6 +28,12 @@ jobs:
       #   run: go test -v ./...
       #   working-directory: services/analytic
 
+      - name: Install Harbor CA certificate
+        run: |
+          sudo mkdir -p /usr/local/share/ca-certificates/harbor
+          echo '${{ secrets.HARBOR_CA_CERT }}' | base64 --decode | sudo tee /usr/local/share/ca-certificates/harbor/harbor-ca.crt
+          sudo update-ca-certificates
+
       - name: Log in to Harbor
         uses: docker/login-action@v3
         with:
