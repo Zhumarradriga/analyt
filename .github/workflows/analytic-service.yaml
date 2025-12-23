@@ -6,6 +6,7 @@ on:
     branches: [ main ]
     paths:
       - 'services/analytic/**'
+  workflow_dispatch:
 
 env:
   HARBOR_REGISTRY: ${{ secrets.HARBOR_REGISTRY }}
