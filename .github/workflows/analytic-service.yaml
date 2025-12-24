@@ -4,8 +4,6 @@ name: Build and Deploy analytic-service
 on:
   push:
     branches: [ main ]
-    paths:
-      - './**'
   workflow_dispatch:
 
 env:
